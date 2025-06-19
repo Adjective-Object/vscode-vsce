@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import { promisify } from 'util';
 import * as semver from 'semver';
 import { ExtensionQueryFlags, PublishedExtension } from 'azure-devops-node-api/interfaces/GalleryInterfaces';
-import { pack, readManifest, versionBump, prepublish, signPackage, createSignatureArchive } from './package';
+import { pack, readManifest, versionBump, prepublish, signPackage, createSignatureArchive, getPackageManagerFromFlags } from './package';
 import * as tmp from 'tmp';
 import { IVerifyPatOptions, getPublisher } from './store';
 import { getGalleryAPI, read, getPublishedUrl, log, getHubUrl, patchOptionsWithManifest } from './util';
@@ -50,6 +50,11 @@ export interface IPublishOptions {
 	 * The base URL for images detected in Markdown files.
 	 */
 	readonly baseImagesUrl?: string;
+
+	/**
+	 * Should use npm instead of Yarn or Deno (disables automatic detection).
+	 */
+	readonly useNpm?: boolean;
 
 	/**
 	 * Should use Yarn instead of NPM.
@@ -159,7 +164,7 @@ export async function publish(options: IPublishOptions = {}): Promise<any> {
 		// Validate marketplace requirements before prepublish to avoid unnecessary work
 		validateManifestForPublishing(manifest, options);
 
-		await prepublish(cwd, manifest, options.useYarn);
+		await prepublish(cwd, manifest, getPackageManagerFromFlags(options));
 		await versionBump(options);
 
 		if (options.targets) {

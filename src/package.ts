@@ -22,7 +22,7 @@ import {
 	validateVSCodeTypesCompatibility,
 	validatePublisher,
 } from './validation';
-import { detectYarn, getDependencies } from './npm';
+import { detectUserPackageManager, getPackageManager, getPackageManagerOrFallback, NonNonePackageManager, PackageManager } from './packageManagers';
 import * as GitHost from 'hosted-git-info';
 import parseSemver from 'parse-semver';
 import * as jsonc from 'jsonc-parser';
@@ -145,6 +145,10 @@ export interface IPackageOptions {
 	 */
 	readonly baseImagesUrl?: string;
 
+	/**
+	 * Should use NPM (instead of auto-detecting other package managers)
+	 */
+	readonly useNpm?: boolean;
 	/**
 	 * Should use Yarn instead of NPM.
 	 */
@@ -1663,11 +1667,17 @@ const defaultIgnore = [
 
 async function collectAllFiles(
 	cwd: string,
-	dependencies: 'npm' | 'yarn' | 'none' | undefined,
+	dependencies: PackageManager | undefined,
 	dependencyEntryPoints?: string[],
 	followSymlinks: boolean = true
 ): Promise<string[]> {
-	const deps = await getDependencies(cwd, dependencies, dependencyEntryPoints);
+	let deps: string[] = (dependencies === PackageManager.None)
+		? [cwd]
+		: await getPackageManagerOrFallback(cwd, dependencies)
+			.then(pm => {
+				return pm.getDependencies(cwd, dependencyEntryPoints)
+			});
+
 	const promises = deps.map(dep =>
 		glob('**', { cwd: dep, nodir: true, follow: followSymlinks, dot: true, ignore: 'node_modules/**' }).then(files =>
 			files.map(f => path.relative(cwd, path.join(dep, f))).map(f => f.replace(/\\/g, '/'))
@@ -1677,24 +1687,17 @@ async function collectAllFiles(
 	return Promise.all(promises).then(util.flatten);
 }
 
-function getDependenciesOption(options: IPackageOptions): 'npm' | 'yarn' | 'none' | undefined {
+function getDependenciesOption(options: IPackageOptions): PackageManager | undefined {
 	if (options.dependencies === false) {
-		return 'none';
+		return PackageManager.None;
 	}
 
-	switch (options.useYarn) {
-		case true:
-			return 'yarn';
-		case false:
-			return 'npm';
-		default:
-			return undefined;
-	}
+	return getPackageManagerFromFlags(options);
 }
 
 function collectFiles(
 	cwd: string,
-	dependencies: 'npm' | 'yarn' | 'none' | undefined,
+	dependencies: PackageManager | undefined,
 	dependencyEntryPoints?: string[],
 	ignoreFile?: string,
 	manifestFileIncludes?: string[],
@@ -1867,20 +1870,39 @@ function getDefaultPackageName(manifest: ManifestPackage, options: IPackageOptio
 	return `${manifest.name}-${version}.vsix`;
 }
 
-export async function prepublish(cwd: string, manifest: ManifestPackage, useYarn?: boolean): Promise<void> {
+type RepoFlagOptions = {
+	useYarn?: boolean;
+	useNpm?: boolean;
+};
+// Gets the user's preferred package manager based on the options provided.
+export function getPackageManagerFromFlags(
+	options: RepoFlagOptions
+): NonNonePackageManager | undefined {
+	return (
+		// legacy: --no-yarn is the same as --npm
+		options.useYarn === false ? PackageManager.Npm
+			// if --yarn, use yarn
+			: options.useYarn ? PackageManager.Yarn
+				// if --npm, use npm	
+				: options.useNpm ? PackageManager.Npm
+					// default: don't specify a user preference. Instead,
+					// infer the package manager from the current working directory later
+					: undefined
+	);
+}
+
+export async function prepublish(cwd: string, manifest: ManifestPackage, pkgManagerName?: NonNonePackageManager): Promise<void> {
 	if (!manifest.scripts || !manifest.scripts['vscode:prepublish']) {
 		return;
 	}
-
-	if (useYarn === undefined) {
-		useYarn = await detectYarn(cwd);
-	}
-
-	console.log(`Executing prepublish script '${useYarn ? 'yarn' : 'npm'} run vscode:prepublish'...`);
+	const resolvedPkgManager: NonNonePackageManager = pkgManagerName ?? await detectUserPackageManager(cwd);
+	const packageManager = getPackageManager(resolvedPkgManager);
+	const taskScript = packageManager.taskRun('vscode:prepublish');
+	console.log(`Executing prepublish script '${taskScript.join(' ')}'...`);
 
 	await new Promise<void>((c, e) => {
-		const tool = useYarn ? 'yarn' : 'npm';
-		const child = cp.spawn(tool, ['run', 'vscode:prepublish'], { cwd, shell: true, stdio: 'inherit' });
+		const tool = packageManager;
+		const child = cp.spawn(taskScript[0], taskScript.slice(1), { cwd, shell: true, stdio: 'inherit' });
 		child.on('exit', code => (code === 0 ? c() : e(`${tool} failed with exit code ${code}`)));
 		child.on('error', e);
 	});
@@ -1969,7 +1991,7 @@ export async function packageCommand(options: IPackageOptions = {}): Promise<any
 	const manifest = await readManifest(cwd);
 	util.patchOptionsWithManifest(options, manifest);
 
-	await prepublish(cwd, manifest, options.useYarn);
+	await prepublish(cwd, manifest, getPackageManagerFromFlags(options));
 	await versionBump(options);
 
 	const { packagePath, files } = await pack(options);
@@ -1987,6 +2009,7 @@ export interface IListFilesOptions {
 	readonly cwd?: string;
 	readonly manifest?: ManifestPackage;
 	readonly useYarn?: boolean;
+	readonly useNpm?: boolean;
 	readonly packagedDependencies?: string[];
 	readonly ignoreFile?: string;
 	readonly dependencies?: boolean;
@@ -2003,7 +2026,7 @@ export async function listFiles(options: IListFilesOptions = {}): Promise<string
 	const manifest = options.manifest ?? await readManifest(cwd);
 
 	if (options.prepublish) {
-		await prepublish(cwd, manifest, options.useYarn);
+		await prepublish(cwd, manifest, getPackageManagerFromFlags(options));
 	}
 
 	return await collectFiles(cwd, getDependenciesOption(options), options.packagedDependencies, options.ignoreFile, manifest.files, options.readmePath, options.followSymlinks);
@@ -2012,6 +2035,7 @@ export async function listFiles(options: IListFilesOptions = {}): Promise<string
 interface ILSOptions {
 	readonly tree?: boolean;
 	readonly useYarn?: boolean;
+	readonly useNpm?: boolean;
 	readonly packagedDependencies?: string[];
 	readonly ignoreFile?: string;
 	readonly dependencies?: boolean;
