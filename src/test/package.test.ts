@@ -48,7 +48,7 @@ async function throws(fn: () => Promise<any>): Promise<void> {
 	}
 }
 
-const fixture = (name: string) => path.join(path.dirname(path.dirname(__dirname)), 'src', 'test', 'fixtures', name);
+const fixture = (name: string) => path.join(path.dirname(path.dirname(__dirname)), 'src', 'test-fixtures', name);
 
 function _toVsixManifest(manifest: ManifestPackage, files: IFile[], options: IPackageOptions = {}): Promise<string> {
 	const processors = createDefaultProcessors(manifest, options);
