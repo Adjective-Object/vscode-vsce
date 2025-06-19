@@ -153,6 +153,10 @@ export interface IPackageOptions {
 	 * Should use Yarn instead of NPM.
 	 */
 	readonly useYarn?: boolean;
+	/**
+	 * Should use Deno instead of NPM.
+	 */
+	readonly useDeno?: boolean;
 	readonly dependencyEntryPoints?: string[];
 	readonly ignoreFile?: string;
 	readonly gitHubIssueLinking?: boolean;
@@ -1872,22 +1876,28 @@ function getDefaultPackageName(manifest: ManifestPackage, options: IPackageOptio
 
 type RepoFlagOptions = {
 	useYarn?: boolean;
+	useDeno?: boolean;
 	useNpm?: boolean;
 };
 // Gets the user's preferred package manager based on the options provided.
 export function getPackageManagerFromFlags(
 	options: RepoFlagOptions
 ): NonNonePackageManager | undefined {
+	if (options.useYarn !== undefined && options.useDeno !== undefined) {
+		throw new Error('Cannot use both --yarn and --deno at the same time.');
+	}
 	return (
 		// legacy: --no-yarn is the same as --npm
 		options.useYarn === false ? PackageManager.Npm
 			// if --yarn, use yarn
 			: options.useYarn ? PackageManager.Yarn
-				// if --npm, use npm	
-				: options.useNpm ? PackageManager.Npm
-					// default: don't specify a user preference. Instead,
-					// infer the package manager from the current working directory later
-					: undefined
+				// if --deno, use deno
+				: options.useDeno ? PackageManager.Deno
+					// if --npm, use npm	
+					: options.useNpm ? PackageManager.Npm
+						// default: don't specify a user preference. Instead,
+						// infer the package manager from the current working directory later
+						: undefined
 	);
 }
 
@@ -2009,6 +2019,7 @@ export interface IListFilesOptions {
 	readonly cwd?: string;
 	readonly manifest?: ManifestPackage;
 	readonly useYarn?: boolean;
+	readonly useDeno?: boolean;
 	readonly useNpm?: boolean;
 	readonly packagedDependencies?: string[];
 	readonly ignoreFile?: string;
@@ -2035,6 +2046,7 @@ export async function listFiles(options: IListFilesOptions = {}): Promise<string
 interface ILSOptions {
 	readonly tree?: boolean;
 	readonly useYarn?: boolean;
+	readonly useDeno?: boolean;
 	readonly useNpm?: boolean;
 	readonly packagedDependencies?: string[];
 	readonly ignoreFile?: string;

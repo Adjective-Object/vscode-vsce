@@ -6,6 +6,7 @@
 export enum PackageManager {
 	Npm,
 	Yarn,
+	Deno,
 	None,
 }
 export type NonNonePackageManager = Exclude<PackageManager, PackageManager.None>;

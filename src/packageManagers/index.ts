@@ -1,4 +1,5 @@
 import { PackageManager } from './types';
+import { Deno } from './deno';
 import { Npm } from './npm';
 import { NonNonePackageManager, PackageManagerDefinition } from './types';
 import { Yarn } from './yarn';
@@ -9,6 +10,7 @@ export { PackageManager }
 const packageManagers = {
 	[PackageManager.Npm]: Npm,
 	[PackageManager.Yarn]: Yarn,
+	[PackageManager.Deno]: Deno,
 } as const;
 
 // detects the user's package manager based on the current working directory.
@@ -17,6 +19,7 @@ export async function detectUserPackageManager(
 ): Promise<NonNonePackageManager> {
 	for (const name of [
 		PackageManager.Yarn,
+		PackageManager.Deno,
 		PackageManager.Npm,
 	] as const) {
 		const packageManager = getPackageManager(name);

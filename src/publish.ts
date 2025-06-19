@@ -60,6 +60,12 @@ export interface IPublishOptions {
 	 * Should use Yarn instead of NPM.
 	 */
 	readonly useYarn?: boolean;
+
+	/**
+	 * Should use Deno instead of NPM.
+	 */
+	readonly useDeno?: boolean;
+
 	readonly dependencyEntryPoints?: string[];
 	readonly ignoreFile?: string;
 

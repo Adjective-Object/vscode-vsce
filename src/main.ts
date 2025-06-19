@@ -71,6 +71,7 @@ module.exports = function (argv: string[]): void {
 		.option('--npm', 'Use npm instead of yarn or deno (default inferred from absence of yarn.lock, .yarnrc, or deno.lock)')
 		.option('--yarn', 'Use yarn instead of npm (default inferred from presence of yarn.lock or .yarnrc)')
 		.option('--no-yarn', 'Deprecated: use --npm instead of --no-yarn.')
+		.option('--deno', 'Use deno instead of npm (default inferred from presence of deno.lock)')
 		.option<string[]>(
 			'--packagedDependencies <path>',
 			'Select packages that should be published only (includes dependencies)',
@@ -79,12 +80,12 @@ module.exports = function (argv: string[]): void {
 		)
 		.option('--ignoreFile <path>', 'Indicate alternative .vscodeignore')
 		// default must remain undefined for dependencies or we will fail to load defaults from package.json
-		.option('--dependencies', 'Enable dependency detection via npm or yarn', undefined)
-		.option('--no-dependencies', 'Disable dependency detection via npm or yarn', undefined)
+		.option('--dependencies', 'Enable dependency detection via npm, yarn, or deno', undefined)
+		.option('--no-dependencies', 'Disable dependency detection via npm yarn, or deno', undefined)
 		.option('--readme-path <path>', 'Path to README file (defaults to README.md)')
 		.option('--follow-symlinks', 'Recurse into symlinked directories instead of treating them as files')
-		.action(({ tree, npm, yarn, packagedDependencies, ignoreFile, dependencies, readmePath, followSymlinks }) =>
-			main(ls({ tree, useNpm: npm, useYarn: yarn, packagedDependencies, ignoreFile, dependencies, readmePath, followSymlinks }))
+		.action(({ tree, npm, yarn, deno, packagedDependencies, ignoreFile, dependencies, readmePath, followSymlinks }) =>
+			main(ls({ tree, useNpm: npm, useYarn: yarn, useDeno: deno, packagedDependencies, ignoreFile, dependencies, readmePath, followSymlinks }))
 		);
 
 	program
@@ -116,6 +117,7 @@ module.exports = function (argv: string[]): void {
 		.option('--npm', 'Use npm instead of yarn or deno (default inferred from absence of yarn.lock, .yarnrc, or deno.lock)')
 		.option('--yarn', 'Use yarn instead of npm (default inferred from presence of yarn.lock or .yarnrc)')
 		.option('--no-yarn', 'Deprecated: use --npm instead of --no-yarn.')
+		.option('--deno', 'Use deno instead of npm (default inferred from presence of deno.lock)')
 		.option('--ignoreFile <path>', 'Indicate alternative .vscodeignore')
 		.option('--no-gitHubIssueLinking', 'Disable automatic expansion of GitHub-style issue syntax into links')
 		.option('--no-gitLabIssueLinking', 'Disable automatic expansion of GitLab-style issue syntax into links')
@@ -151,6 +153,7 @@ module.exports = function (argv: string[]): void {
 					baseImagesUrl,
 					npm,
 					yarn,
+					deno,
 					ignoreFile,
 					gitHubIssueLinking,
 					gitLabIssueLinking,
@@ -185,6 +188,7 @@ module.exports = function (argv: string[]): void {
 						baseImagesUrl,
 						useNpm: npm,
 						useYarn: yarn,
+						useDeno: deno,
 						ignoreFile,
 						gitHubIssueLinking,
 						gitLabIssueLinking,
@@ -240,7 +244,7 @@ module.exports = function (argv: string[]): void {
 		.option('--npm', 'Use npm instead of yarn or deno (default inferred from absence of yarn.lock, .yarnrc, or deno.lock)')
 		.option('--yarn', 'Use yarn instead of npm (default inferred from presence of yarn.lock or .yarnrc)')
 		.option('--no-yarn', 'Deprecated: use --npm instead of --no-yarn.')
-		.option('--npm', 'Use npm instead of yarn (default inferred from absence of yarn.lock or .yarnrc)')
+		.option('--deno', 'Use deno instead of npm (default inferred from presence of deno.lock)')
 		.option('--no-verify', 'Allow all proposed APIs (deprecated: use --allow-all-proposed-apis instead)')
 		.addOption(new Option('--noVerify', 'Allow all proposed APIs (deprecated: use --allow-all-proposed-apis instead)').hideHelp(true))
 		.option('--allow-proposed-apis <apis...>', 'Allow specific proposed APIs')
@@ -282,6 +286,7 @@ module.exports = function (argv: string[]): void {
 					baseImagesUrl,
 					npm,
 					yarn,
+					deno,
 					verify,
 					noVerify,
 					allowProposedApis,
@@ -323,6 +328,7 @@ module.exports = function (argv: string[]): void {
 						baseImagesUrl,
 						useNpm: npm,
 						useYarn: yarn,
+						useDeno: deno,
 						noVerify: noVerify || !verify,
 						allowProposedApis,
 						allowAllProposedApis,

@@ -1,5 +1,8 @@
 import { publish as _publish, IPublishOptions, unpublish as _unpublish, IUnpublishOptions } from './publish';
 import { packageCommand, listFiles as _listFiles, IPackageOptions } from './package';
+import { PackageManager } from './packageManagers/types';
+
+export { PackageManager, IUnpublishOptions };
 
 /**
  * @deprecated prefer IPackageOptions instead
@@ -7,7 +10,7 @@ import { packageCommand, listFiles as _listFiles, IPackageOptions } from './pack
  */
 export type IBaseVSIXOptions = Pick<
 	IPackageOptions,
-	'baseContentUrl' | 'baseImagesUrl' | 'githubBranch' | 'gitlabBranch' | 'useYarn' | 'target' | 'preRelease'
+	'baseContentUrl' | 'baseImagesUrl' | 'githubBranch' | 'gitlabBranch' | 'useYarn' | 'useDeno' | 'target' | 'preRelease'
 >;
 
 /**
@@ -15,16 +18,6 @@ export type IBaseVSIXOptions = Pick<
  * @public
  */
 export type ICreateVSIXOptions = Pick<IPackageOptions, 'cwd' | 'packagePath'> & IBaseVSIXOptions;
-
-/**
- * The supported list of package managers.
- * @public
- */
-export enum PackageManager {
-	Npm,
-	Yarn,
-	None,
-}
 
 /**
  * Options for the `listFiles` function.
@@ -84,6 +77,8 @@ export function listFiles(options: IListFilesOptions = {}): Promise<string[]> {
 	return _listFiles({
 		...options,
 		useYarn: options.packageManager === PackageManager.Yarn,
+		useDeno: options.packageManager === PackageManager.Deno,
+		useNpm: options.packageManager === PackageManager.Npm,
 		dependencies: options.packageManager !== PackageManager.None,
 	});
 }
