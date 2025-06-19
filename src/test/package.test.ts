@@ -319,66 +319,183 @@ describe('collect', function () {
 			});
 	});
 
-	it('should honor dependencyEntryPoints', () => {
-		const cwd = fixture('packagedDependencies');
+	describe('useYarn: true', () => {
+		it('should honor dependencyEntryPoints', () => {
+			const cwd = fixture('packagedDependencies');
 
-		return readManifest(cwd)
-			.then(manifest => collect(manifest, { cwd, useYarn: true, dependencyEntryPoints: ['isexe'] }))
-			.then(files => {
-				let seenWhich: boolean = false;
-				let seenIsexe: boolean = false;
-				for (const file of files) {
-					seenWhich = file.path.indexOf('/node_modules/which/') >= 0;
-					seenIsexe = file.path.indexOf('/node_modules/isexe/') >= 0;
-				}
-				assert.strictEqual(seenWhich, false);
-				assert.strictEqual(seenIsexe, true);
-			});
-	});
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd, useYarn: true, dependencyEntryPoints: ['isexe'] }))
+				.then(files => {
+					assert.ok(!files.some(x => x.path.includes('/node_modules/which/')), `should not package 'which' in ${files.map(f => f.path)}`);
+					assert.ok(files.some(x => x.path.includes('/node_modules/isexe/')), `should package 'isexe' in ${files.map(f => f.path)}`);
+				});
+		});
 
-	it('should detect yarn', () => {
-		const cwd = fixture('packagedDependencies');
+		it('should detect yarn', () => {
+			const cwd = fixture('packagedDependencies');
 
-		return readManifest(cwd)
-			.then(manifest => collect(manifest, { cwd, dependencyEntryPoints: ['isexe'] }))
-			.then(files => {
-				let seenWhich: boolean = false;
-				let seenIsexe: boolean = false;
-				for (const file of files) {
-					seenWhich = file.path.indexOf('/node_modules/which/') >= 0;
-					seenIsexe = file.path.indexOf('/node_modules/isexe/') >= 0;
-				}
-				assert.strictEqual(seenWhich, false);
-				assert.strictEqual(seenIsexe, true);
-			});
-	});
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd, dependencyEntryPoints: ['isexe'] }))
+				.then(files => {
+					assert.ok(!files.some(x => x.path.includes('/node_modules/which/')), `should not package 'which' in ${files.map(f => f.path)}`);
+					assert.ok(files.some(x => x.path.includes('/node_modules/isexe/')), `should package 'isexe' in ${files.map(f => f.path)}`);
+				});
+		});
 
-	it('should include all node_modules when dependencyEntryPoints is not defined', () => {
-		const cwd = fixture('packagedDependencies');
+		it('should include all node_modules when dependencyEntryPoints is not defined', () => {
+			const cwd = fixture('packagedDependencies');
 
-		return readManifest(cwd)
-			.then(manifest => collect(manifest, { cwd, useYarn: true }))
-			.then(files => {
-				let seenWhich: boolean = false;
-				let seenIsexe: boolean = false;
-				for (const file of files) {
-					seenWhich = file.path.indexOf('/node_modules/which/') >= 0;
-					seenIsexe = file.path.indexOf('/node_modules/isexe/') >= 0;
-				}
-				assert.strictEqual(seenWhich, true);
-				assert.strictEqual(seenIsexe, true);
-			});
-	});
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd, useYarn: true }))
+				.then(files => {
+					assert.ok(files.some(x => x.path.includes('/node_modules/which/')), `should package 'which' in ${files.map(f => f.path)}`);
+					assert.ok(files.some(x => x.path.includes('/node_modules/isexe/')), `should package 'isexe' in ${files.map(f => f.path)}`);
+				});
+		});
 
-	it('should skip all node_modules when dependencyEntryPoints is []', () => {
-		const cwd = fixture('packagedDependencies');
+		it('should skip all node_modules when dependencyEntryPoints is []', () => {
+			const cwd = fixture('packagedDependencies');
 
-		return readManifest(cwd)
-			.then(manifest => collect(manifest, { cwd, useYarn: true, dependencyEntryPoints: [] }))
-			.then(files => {
-				files.forEach(file => assert.ok(file.path.indexOf('/node_modules/which/') < 0, file.path));
-			});
-	});
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd, useYarn: true, dependencyEntryPoints: [] }))
+				.then(files => {
+					let nodeModulesFiles = files.filter(file => file.path.indexOf('/node_modules/') >= 0);
+					assert.ok(nodeModulesFiles.length === 0, `should package zero node_modules, but packaged ${nodeModulesFiles.map(f => f.path)}`);
+				});
+		});
+	})
+
+	describe('Deno in a workspace folder', () => {
+		it('should honor dependencyEntryPoints', () => {
+			const cwd = fixture('denoWorkspaceDependencies');
+
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd, useDeno: true, dependencyEntryPoints: ['isexe'] }))
+				.then(files => {
+					assert.ok(!files.some(x => x.path.includes('/node_modules/.deno/which@1.3.1/')), `should not package 'which' in ${files.map(f => f.path)}`);
+					assert.ok(files.some(x => x.path.includes('/node_modules/.deno/isexe@2.0.0/')), `should package 'isexe' in ${files.map(f => f.path)}`);
+				});
+		});
+
+		it('should detect deno', () => {
+			const cwd = fixture('denoWorkspaceDependencies');
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd, dependencyEntryPoints: ['isexe'] }))
+				.then(files => {
+					assert.ok(!files.some(x => x.path.includes('/node_modules/.deno/which@1.3.1/')), `should not package 'which' in ${files.map(f => f.path)}`);
+					assert.ok(files.some(x => x.path.includes('/node_modules/.deno/isexe@2.0.0/')), `should package 'isexe' in ${files.map(f => f.path)}`);
+				});
+		});
+
+		it('should include all node_modules when dependencyEntryPoints is not defined', () => {
+			const cwd = fixture('denoWorkspaceDependencies');
+
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd, useDeno: true }))
+				.then(files => {
+					const expected = [
+						'node_modules/.deno/@types+node@22.15.31/',
+						'node_modules/.deno/isexe@1.0.0/',
+						'node_modules/.deno/isexe@2.0.0/',
+						'node_modules/.deno/undici-types@6.21.0/',
+						'node_modules/.deno/which@1.3.1/',
+					];
+					assert.deepEqual(Object.fromEntries(expected.map(e => [e, files.some(x => x.path.includes(e))])),
+						{
+							'node_modules/.deno/@types+node@22.15.31/': true,
+							'node_modules/.deno/isexe@1.0.0/': true,
+							'node_modules/.deno/isexe@2.0.0/': true,
+							'node_modules/.deno/undici-types@6.21.0/': true,
+							'node_modules/.deno/which@1.3.1/': true,
+						});
+				});
+		});
+
+		it('should skip all node_modules when dependencyEntryPoints is []', () => {
+			const cwd = fixture('denoWorkspaceDependencies');
+
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd, useDeno: true, dependencyEntryPoints: [] }))
+				.then(files => {
+					let nodeModulesFiles = files.filter(file => file.path.indexOf('/node_modules/') >= 0);
+					assert.ok(nodeModulesFiles.length === 0, `should package zero node_modules, but packaged ${nodeModulesFiles.map(f => f.path)}`);
+				});
+		});
+	})
+
+	describe('Deno in a non-workspace folder', () => {
+		it("contains a package@version_dep@version style dependency in deno.lock", () => {
+			// We use picomatch and fdir in the denoDependencies fixture so we can force multiple indirect
+			// dependencies on picomatch@4.0.2, which causes deno to materialize it in deno.lock as
+			// package@version_dependency@version.
+			const cwd = fixture('denoDependencies');
+			const denoLock = path.join(cwd, 'deno.lock');
+			const denoLockContent = fs.readFileSync(denoLock, 'utf8');
+			const denoLockJson = jsonc.parse(denoLockContent);
+			assert.ok(denoLockJson, 'deno.lock should be a valid JSON file');
+			assert.ok(Object.entries(denoLockJson.npm).some(([key, _value]) => key.match(/.+@[0-9.]+_.+@[0-9.]+/)));
+		});
+
+		it('should honor dependencyEntryPoints', () => {
+			const cwd = fixture('denoDependencies');
+
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd, useDeno: true, dependencyEntryPoints: ['isexe'] }))
+				.then(files => {
+					assert.ok(!files.some(x => x.path.includes('/node_modules/.deno/picomatch@4.0.2/')), `'picomatch' not in ${files.map(f => f.path)}`);
+					assert.ok(!files.some(x => x.path.includes('/node_modules/.deno/fdir@6.4.6/')), `'fdir' not in ${files.map(f => f.path)}`);
+					assert.ok(files.some(x => x.path.includes('/node_modules/.deno/isexe@2.0.0/')), `'isexe' in ${files.map(f => f.path)}`);
+				});
+		});
+
+		it('should detect deno', () => {
+			const cwd = fixture('denoDependencies');
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd, dependencyEntryPoints: ['isexe'] }))
+				.then(files => {
+					assert.ok(!files.some(x => x.path.includes('/node_modules/.deno/picomatch@4.0.2/')), `'picomatch' not in ${files.map(f => f.path)}`);
+					assert.ok(!files.some(x => x.path.includes('/node_modules/.deno/fdir@6.4.6/')), `'fdir' not in ${files.map(f => f.path)}`);
+					assert.ok(files.some(x => x.path.includes('/node_modules/.deno/isexe@2.0.0/')), `'isexe' in ${files.map(f => f.path)}`);
+				});
+		});
+
+		it('should include all node_modules when dependencyEntryPoints is not defined', () => {
+			const cwd = fixture('denoDependencies');
+
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd, useDeno: true }))
+				.then(files => {
+					assert.ok(files.some(x => x.path.includes('/node_modules/.deno/picomatch@4.0.2/')), `'picomatch' in ${files.map(f => f.path)}`);
+					assert.ok(files.some(x => x.path.includes('/node_modules/.deno/fdir@6.4.6/')), `'fdir' in ${files.map(f => f.path)}`);
+					assert.ok(files.some(x => x.path.includes('/node_modules/.deno/isexe@2.0.0/')), `'isexe' in ${files.map(f => f.path)}`);
+				});
+		});
+
+		it('should skip all node_modules when dependencyEntryPoints is []', () => {
+			const cwd = fixture('denoDependencies');
+
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd, useDeno: true, dependencyEntryPoints: [] }))
+				.then(files => {
+					files.forEach(file => assert.ok(
+						file.path.indexOf('/node_modules/') < 0,
+						`should have zero node modules in ${files.map(f => f.path)}`,
+					));
+				});
+		});
+
+		it("handles a dependency with a rebound name in deno.lock", () => {
+			// We use picomatch and fdir in the denoDependencies fixture so we can force multiple indirect
+			// dependencies on picomatch@4.0.2, which causes deno to materialize it in deno.lock as
+			// package@version_dependency@version.
+			const cwd = fixture('denoReboundDependencies');
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd, useDeno: true }))
+				.then(files => {
+					assert.ok(files.some(x => /\/strip-ansi-cjs(\/|$)/.exec(x.path)), `'/strip-ansi-cjs/' in ${files.map(f => f.path)}`);
+				});
+		});
+	})
 
 	it('should skip all dependencies when using --no-dependencies', async () => {
 		const cwd = fixture('devDependencies');

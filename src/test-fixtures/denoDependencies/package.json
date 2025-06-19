@@ -1,0 +1,13 @@
+{
+	"name": "root-test-package",
+	"publisher": "jrieken",
+	"version": "1.0.0",
+	"engines": {
+		"vscode": "*"
+	},
+	"dependencies": {
+		"isexe": "2.0.0",
+		"renamed-fdir": "npm:fdir@6.4.6",
+		"picomatch": "4.0.2"
+	}
+}

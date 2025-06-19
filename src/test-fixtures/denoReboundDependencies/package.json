@@ -1,0 +1,11 @@
+{
+	"name": "root-test-package",
+	"publisher": "jrieken",
+	"version": "1.0.0",
+	"engines": {
+		"vscode": "*"
+	},
+	"dependencies": {
+		"@isaacs/cliui": "8.0.2"
+	}
+}

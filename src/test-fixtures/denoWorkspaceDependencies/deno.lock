@@ -1,0 +1,57 @@
+{
+  "version": "5",
+  "specifiers": {
+    "npm:@types/node@22": "22.15.31",
+    "npm:isexe@1.0.0": "1.0.0",
+    "npm:which@1.3.1": "1.3.1"
+  },
+  "npm": {
+    "@types/node@22.15.31": {
+      "integrity": "sha512-jnVe5ULKl6tijxUhvQeNbQG/84fHfg+yMak02cT8QVhBx/F05rAVxCGBYYTh2EKz22D6JF5ktXuNwdx7b9iEGw==",
+      "dependencies": [
+        "undici-types"
+      ]
+    },
+    "isexe@1.0.0": {
+      "integrity": "sha512-xOmCsItMYmB/ti6mbBXTZ86HwBXqZB4TjCkACLNZeaCUjIvTNEd/QaFi/zOQEs31CLSqHZHIUOo7zicmLmKCOw=="
+    },
+    "isexe@2.0.0": {
+      "integrity": "sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw=="
+    },
+    "undici-types@6.21.0": {
+      "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="
+    },
+    "which@1.3.1": {
+      "integrity": "sha512-HxJdYWq1MTIQbJ3nw0cqssHoTNU267KlrDuGZ1WYlxDStUtKUhOaJmh112/TZmHxxUfuJqPXSOm7tDyas0OSIQ==",
+      "dependencies": [
+        "isexe@2.0.0"
+      ],
+      "bin": true
+    }
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:isexe@1.0.0",
+        "npm:which@1.3.1"
+      ]
+    },
+    "members": {
+      "packages/mypkg1": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@types/node@22",
+            "npm:isexe@1.0.0"
+          ]
+        }
+      },
+      "packages/mypkg2": {
+        "packageJson": {
+          "dependencies": [
+            "npm:which@1.3.1"
+          ]
+        }
+      }
+    }
+  }
+}
