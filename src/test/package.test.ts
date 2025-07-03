@@ -421,6 +421,23 @@ describe('collect', function () {
 					assert.ok(nodeModulesFiles.length === 0, `should package zero node_modules, but packaged ${nodeModulesFiles.map(f => f.path)}`);
 				});
 		});
+
+		it('should un-hoist parent node_modules folders into the extension\'s node_modules directory', () => {
+			const workspaceRoot = fixture('denoWorkspaceDependencies');
+			const cwd = path.join(workspaceRoot, 'packages', 'mypkg1');
+
+			return readManifest(cwd)
+				.then(manifest => collect(manifest, { cwd: cwd, useDeno: true }))
+				.then(files => {
+					assert.ok(
+						// ensure the fixture does include the parent node_modules folder
+						files.some(f => f.originalPath?.includes(".."))
+						// ensure the parent node_modules folder is un-hoisted
+						&& !files.some(f => f.path.includes("..")),
+						`should unhoist parent node_modules directories, but packaged ${files.map(f => `${f.originalPath} -> ${f.path})}`).join('\n')}`,
+					);
+				});
+		});
 	})
 
 	describe('Deno in a non-workspace folder', () => {

@@ -1,6 +1,9 @@
 {
 	"name": "mypkg1",
 	"version": "1.0.0",
+	"engines": {
+		"vscode": "*"
+	},
 	"dependencies": {
 		"isexe": "npm:isexe@1.0.0",
 		"@types/node": "^22"
