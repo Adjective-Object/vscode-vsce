@@ -118,6 +118,12 @@ module.exports = function (argv: string[]): void {
 		.option('--yarn', 'Use yarn instead of npm (default inferred from presence of yarn.lock or .yarnrc)')
 		.option('--no-yarn', 'Deprecated: use --npm instead of --no-yarn.')
 		.option('--deno', 'Use deno instead of npm (default inferred from presence of deno.lock)')
+		.option<string[]>(
+			'--packagedDependencies <path>',
+			'Select packages that should be published only (includes dependencies)',
+			(val, all) => (all ? all.concat(val) : [val]),
+			undefined
+		)
 		.option('--ignoreFile <path>', 'Indicate alternative .vscodeignore')
 		.option('--no-gitHubIssueLinking', 'Disable automatic expansion of GitHub-style issue syntax into links')
 		.option('--no-gitLabIssueLinking', 'Disable automatic expansion of GitLab-style issue syntax into links')
@@ -154,6 +160,7 @@ module.exports = function (argv: string[]): void {
 					npm,
 					yarn,
 					deno,
+					packagedDependencies,
 					ignoreFile,
 					gitHubIssueLinking,
 					gitLabIssueLinking,
@@ -189,6 +196,7 @@ module.exports = function (argv: string[]): void {
 						useNpm: npm,
 						useYarn: yarn,
 						useDeno: deno,
+						dependencyEntryPoints: packagedDependencies,
 						ignoreFile,
 						gitHubIssueLinking,
 						gitLabIssueLinking,
@@ -245,6 +253,12 @@ module.exports = function (argv: string[]): void {
 		.option('--yarn', 'Use yarn instead of npm (default inferred from presence of yarn.lock or .yarnrc)')
 		.option('--no-yarn', 'Deprecated: use --npm instead of --no-yarn.')
 		.option('--deno', 'Use deno instead of npm (default inferred from presence of deno.lock)')
+		.option<string[]>(
+			'--packagedDependencies <path>',
+			'Select packages that should be published only (includes dependencies)',
+			(val, all) => (all ? all.concat(val) : [val]),
+			undefined
+		)
 		.option('--no-verify', 'Allow all proposed APIs (deprecated: use --allow-all-proposed-apis instead)')
 		.addOption(new Option('--noVerify', 'Allow all proposed APIs (deprecated: use --allow-all-proposed-apis instead)').hideHelp(true))
 		.option('--allow-proposed-apis <apis...>', 'Allow specific proposed APIs')
@@ -287,6 +301,7 @@ module.exports = function (argv: string[]): void {
 					npm,
 					yarn,
 					deno,
+					packagedDependencies,
 					verify,
 					noVerify,
 					allowProposedApis,
@@ -329,6 +344,7 @@ module.exports = function (argv: string[]): void {
 						useNpm: npm,
 						useYarn: yarn,
 						useDeno: deno,
+						dependencyEntryPoints: packagedDependencies,
 						noVerify: noVerify || !verify,
 						allowProposedApis,
 						allowAllProposedApis,
